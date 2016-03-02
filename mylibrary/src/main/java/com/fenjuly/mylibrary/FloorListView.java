@@ -1,9 +1,8 @@
 package com.fenjuly.mylibrary;
 
-import android.animation.Animator;
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
@@ -11,20 +10,22 @@ import android.widget.AbsListView;
 import android.widget.ListView;
 
 /**
- * Created by liurongchan on 16/3/1.
+ * Created by fenjuly on 16/3/1.
  */
 public class FloorListView extends ListView {
 
-    public static final int NORMAL = -1;
+    public static final int NORMAL = -1; //not in use now
     public static final int ABOVE = 0;
     public static final int BELOW = 1;
 
     int mTranstateY = 0;
     boolean isFirstScrolling = true;
     PinnedView mPinnedView;
-    private int rHeight = 0;
+    private int rHeight = 2;
     private OnFloorChangedListner onFloorChangedListner;
     private int mode = NORMAL;
+
+    Paint paint = new Paint();
 
     public int getMode() {
         return mode;
@@ -50,22 +51,29 @@ public class FloorListView extends ListView {
         super(context, attrs);
         setOnScrollListener(l);
         mPinnedView = new PinnedView();
+
     }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
         View v;
-
         v = getChildAt(0);
         int l = getPaddingLeft();
         int r = l + v.getWidth();
         int t = getPaddingTop();
         int b = t + v.getHeight();
 
-        canvas.clipRect(l, t, r, t + b - mTranstateY-dp2px(rHeight));
+        if(mode == ABOVE) {
+            canvas.clipRect(l, t, r, t + b - mTranstateY-dp2px(rHeight));
+        } else if (mode == BELOW) {
+            canvas.clipRect(l, t, r, t + b);
+        }
+
+        canvas.drawLine(l,t+b,r,t+b,paint);
         canvas.translate(l, t + mTranstateY);
         drawChild(canvas, v, getDrawingTime());
+
     }
 
     private final AbsListView.OnScrollListener l = new AbsListView.OnScrollListener() {
@@ -80,7 +88,6 @@ public class FloorListView extends ListView {
             if (isFirstScrolling) {
                 isFirstScrolling = false;
                 mTranstateY = 0;
-
             } else {
                 if (mPinnedView.position == -1) {
                     mPinnedView.position = 0;
@@ -91,17 +98,16 @@ public class FloorListView extends ListView {
                     }
                     if (mode == ABOVE) {
                         for (int i = 0; i < getChildCount(); i++) {
-//                            Animator away;
                             if (i != 0) {
                                 getChildAt(i).setElevation(dp2px(1+rHeight));
-//                                away = ObjectAnimator.ofFloat(getChildAt(i), "translationZ", dp2px(1+rHeight));
                             } else {
                                 getChildAt(i).setElevation(dp2px(1));
-//                                away = ObjectAnimator.ofFloat(getChildAt(i), "translationZ", dp2px(1));
                             }
-//                            away.setDuration(0);
-//                            away.start();
                         }
+                    } else if (mode == BELOW) {
+                        /**
+                         * complete in future
+                         */
                     }
                 }
                 mTranstateY = v.getHeight() - v.getBottom();
@@ -111,12 +117,14 @@ public class FloorListView extends ListView {
                     if (onFloorChangedListner != null) {
                         onFloorChangedListner.OnFloorFalldown();
                     }
-                    if (mode != NORMAL) {
-                        mPinnedView.position = firstVisibleItem;
+                    mPinnedView.position = firstVisibleItem;
+                    if (mode == BELOW) {
+                        /**
+                         * complete in future
+                         */
+                    }
+                    if (mode == ABOVE) {
                         for (int i =  0; i < getChildCount(); i++) {
-//                            Animator away = ObjectAnimator.ofFloat(getChildAt(i), "translationZ", dp2px(1));
-//                            away.setDuration(0);
-//                            away.start();
                             getChildAt(i).setElevation(1);
                         }
                     }
@@ -124,9 +132,6 @@ public class FloorListView extends ListView {
                 if (mPinnedView.position == 0) {
                     if (v.getBottom() == v.getHeight()) {
                         for (int i =  0; i < getChildCount(); i++) {
-//                            Animator away = ObjectAnimator.ofFloat(getChildAt(i), "translationZ", dp2px(1));
-//                            away.setDuration(0);
-//                            away.start();
                             getChildAt(i).setElevation(dp2px(1));
                         }
                     }
